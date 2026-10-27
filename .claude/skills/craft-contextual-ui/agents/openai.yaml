@@ -1,0 +1,4 @@
+interface:
+  display_name: "Craft Contextual UI"
+  short_description: "Design and verify product-specific interfaces"
+  default_prompt: "Use $craft-contextual-ui to design or refine this product interface and verify its rendered states."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Operate Production Safely"
+  short_description: "Gate and verify bounded live operations"
+  default_prompt: "Use $operate-production-safely to freeze the live target, authority, action, stop, recovery, and readback gates."

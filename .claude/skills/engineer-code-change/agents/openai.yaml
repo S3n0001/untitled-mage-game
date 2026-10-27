@@ -1,0 +1,4 @@
+interface:
+  display_name: "Engineer Code Change"
+  short_description: "Implement integrated code changes through proof"
+  default_prompt: "Use $engineer-code-change to implement this local change safely and prove the requested outcome."

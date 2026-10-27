@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify End to End"
+  short_description: "Prove changes through real runnable outcomes"
+  default_prompt: "Use $verify-end-to-end to exercise the implemented change through its real surface and capture observable proof."

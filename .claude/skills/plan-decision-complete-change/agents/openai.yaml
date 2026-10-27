@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan a Decision-Complete Change"
+  short_description: "Create snapshot-bound, decision-complete plans"
+  default_prompt: "Use $plan-decision-complete-change to produce a snapshot-bound plan that resolves consequential implementation choices."

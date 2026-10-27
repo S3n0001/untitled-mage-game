@@ -1,0 +1,25 @@
+# Secrets and local config
+.env
+.env.*
+*.key
+.claude/settings.local.json
+
+# Rojo / Luau generated
+game/sourcemap.json
+game/build/
+*.rbxl.lock
+*.rbxlx.lock
+
+# Blender autosaves and backups
+*.blend1
+*.blend2
+*.blend@
+
+# OS and editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/

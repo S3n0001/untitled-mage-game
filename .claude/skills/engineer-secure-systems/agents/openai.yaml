@@ -1,0 +1,4 @@
+interface:
+  display_name: "Engineer Secure Systems"
+  short_description: "Design and verify abuse-resistant security controls"
+  default_prompt: "Use $engineer-secure-systems to assess the attack paths and design verifiable preventive and detective controls."

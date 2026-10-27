@@ -1,0 +1,4 @@
+interface:
+  display_name: "Write Durable Documentation"
+  short_description: "Produce verified, maintainable documentation"
+  default_prompt: "Use $write-durable-documentation to document this system with every claim verified against current code and behavior."

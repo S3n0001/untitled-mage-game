@@ -1,0 +1,4 @@
+interface:
+  display_name: "Handle Sensitive Data Safely"
+  short_description: "Minimize sensitive-data access and disclosure"
+  default_prompt: "Use $handle-sensitive-data-safely to complete this purpose while minimizing access, disclosure, retention, and evidence."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Code With Evidence"
+  short_description: "Find reachable defects in bounded code changes"
+  default_prompt: "Use $review-code-with-evidence to inspect this exact candidate read-only and report only reachable, evidenced defects."

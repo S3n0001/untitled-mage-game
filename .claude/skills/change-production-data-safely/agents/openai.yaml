@@ -1,0 +1,4 @@
+interface:
+  display_name: "Change Production Data Safely"
+  short_description: "Change live data with preview and reconciliation"
+  default_prompt: "Use $change-production-data-safely to preview, execute, resume, and reconcile this authorized production data change."

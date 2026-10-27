@@ -1,0 +1,4 @@
+interface:
+  display_name: "Publish Verified GitHub Change"
+  short_description: "Publish exact reviewed GitHub snapshots safely"
+  default_prompt: "Use $publish-verified-github-change to publish only the authorized, exact reviewed snapshot and verify remote state."

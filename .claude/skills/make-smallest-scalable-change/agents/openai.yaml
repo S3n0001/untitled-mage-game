@@ -1,0 +1,4 @@
+interface:
+  display_name: "Make the Smallest Scalable Change"
+  short_description: "Choose the smallest coherent code change"
+  default_prompt: "Use $make-smallest-scalable-change to choose the narrowest coherent design for this authorized change."

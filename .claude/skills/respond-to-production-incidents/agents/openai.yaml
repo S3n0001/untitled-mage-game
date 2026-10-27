@@ -1,0 +1,4 @@
+interface:
+  display_name: "Respond to Production Incidents"
+  short_description: "Coordinate active impact containment and recovery"
+  default_prompt: "Use $respond-to-production-incidents to coordinate evidence, containment, recovery, and communication while impact remains active."

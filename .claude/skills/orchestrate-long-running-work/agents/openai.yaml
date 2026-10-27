@@ -1,0 +1,4 @@
+interface:
+  display_name: "Orchestrate Long-Running Work"
+  short_description: "Keep multi-phase work resumable and evidence-led"
+  default_prompt: "Use $orchestrate-long-running-work to preserve intent, acceptance evidence, ownership, and resumability across phases."

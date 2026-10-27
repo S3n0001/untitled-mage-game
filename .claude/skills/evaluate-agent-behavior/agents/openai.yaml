@@ -1,0 +1,4 @@
+interface:
+  display_name: "Evaluate Agent Behavior"
+  short_description: "Measure agent routing, safety, and outcomes"
+  default_prompt: "Use $evaluate-agent-behavior to build measurable cases and evaluate this agent behavior with controlled trials."

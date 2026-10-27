@@ -1,0 +1,4 @@
+interface:
+  display_name: "Migrate Contracts Safely"
+  short_description: "Stage compatible, reversible contract migrations"
+  default_prompt: "Use $migrate-contracts-safely to design this transition for mixed versions, safe cutover, rollback, and retirement."

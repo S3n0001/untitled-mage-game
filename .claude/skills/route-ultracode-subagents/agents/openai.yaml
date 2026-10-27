@@ -1,0 +1,4 @@
+interface:
+  display_name: "Route Ultracode Subagents"
+  short_description: "Claude Code only: match models to Ultracode task difficulty"
+  default_prompt: "In Claude Code, use $route-ultracode-subagents to route each Ultracode workflow stage to Sonnet 5, Opus 5, or Fable 5.1 by difficulty."

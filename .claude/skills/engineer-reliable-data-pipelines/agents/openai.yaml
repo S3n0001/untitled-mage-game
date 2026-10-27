@@ -1,0 +1,4 @@
+interface:
+  display_name: "Engineer Reliable Data Pipelines"
+  short_description: "Design replayable, reconcilable data pipelines"
+  default_prompt: "Use $engineer-reliable-data-pipelines to design or assess this pipeline for replay, correctness, and reconciliation."

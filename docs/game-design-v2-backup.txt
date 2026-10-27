@@ -1,0 +1,714 @@
+Untitled Mage Game: Game Design Document (v2)
+"Mana is Volition. Usage is Mastery. Death is a Journey."
+Status tags used in this document
+LOCKED: from the original design doc, or confirmed in design discussion.
+PROPOSED: recommended by design review, awaiting your confirmation.
+OPEN: a decision is needed. Section 22 collects every open item with a recommended default.
+(tune): a starting value for playtesting, not a decision.
+What v2 adds to v1: the delayed-resolution latency spec; a full combat specification; a rebuilt progression system (four clocks, ripeness and catalysts, anti-carry XP); an overworld designed as the Aether's gentler edge (the Drift, Bleed Zones, Fissures); a law-and-crime system; destruction; the menu, places and character-slot architecture; mobile and console design; security and testing; and a production plan. Inconsistencies found in v1 are listed in Appendix A.
+
+1. Core Philosophy
+This is a high-stakes, open-world magic combat simulator. It rejects floating levels and skill trees in favor of usage-based progression and physics-based magic. Mechanical inspiration: Deepwoken (parry, posture, permadeath). Narrative inspiration: Frieren (magic as a discipline of logic).
+1.1 Pillars
+High-Stakes Resource Management. There is no stamina bar. Mana governs movement, offense and defense. Mismanaging it leads to helplessness.
+Usage-Based Evolution. You are what you practice. Specific actions improve specific attributes.
+Cyclical Permadeath. Characters die, but their knowledge (the Grimoire) passes to the next generation.
+Social Ecology. The math discourages boosting and rewards hunting new threats instead of farming friends.
+Earned Discovery. The world is built to be explored. Discoveries are knowledge and tools, never free stats. (new)
+Fair Danger. Every death should trace back to a player decision, even in the Aether. (new)
+1.2 Design Laws
+Every defense costs something real: mana, durability, or position.
+The server decides, the client predicts. Clients show instant feedback; the server owns every outcome.
+Learnable versus unlearnable. Overworld variance can be mastered through experience. Aether variance cannot. If experience can master it, it belongs in the overworld.
+Variety is the bottleneck for progress, not volume. Players advance by doing new things, not the same thing more times.
+Telegraphs are gameplay. Startup frames are information. Never shorten a telegraph below its readability floor to add difficulty.
+Power is never sold. Monetization covers slots, cosmetics and convenience only.
+
+2. Audience, Platforms and Scope
+2.1 Audience (estimates, not forecasts)
+Target: players who want a hard, deep, no-hand-holding combat game.
+Comparables (2026 tracker figures, which vary by source): Deepwoken sits at roughly 4K to 8K concurrent players with about 1.6B total visits. Rogue Lineage peaks around 3K concurrent. Both took years to reach those numbers.
+Planning ranges for peak concurrent players: a solid launch is 500 to 3K. The Deepwoken tier is 3K to 8K. With strong mobile and console support, 5K to 15K is plausible. Mass-market numbers (100K+) are not a target, because permadeath, no tutorial and the Aether filter the audience by design.
+Growth channels: short clips (perfect parries, Sacrifices, Aether escapes) spread by content creators; mobile and console reach; and a fully viable PvE training path, because PvP XP dries up at low population.
+2.2 Platforms
+PC, mobile and console are all first-class targets.
+About 80% of Roblox sessions are on mobile, 17% on PC and 3% on console (figures vary by source). Most players use more than one device, so mobile support mostly adds mobile-only players and more sessions from cross-device players.
+A hardcore mobile player is not the average mobile player. Mobile sessions run shorter, so progression must give something meaningful in a 15-minute session.
+Console is a small slice but cheap to support, since Roblox handles gamepad input natively.
+2.3 Input Fairness (PROPOSED)
+No platform-specific parry windows. The 0.2s window is identical everywhere. Assists are limited to targeting help and input buffering (tune: about 80ms before the window), applied equally on every platform.
+Mobile controls: contextual and radial buttons; 4 to 5 active abilities with loadout presets (PC keeps the 1 to 7 hotbar); a dedicated block/parry button; dash and weapon toggle on large, thumb-reachable controls.
+Console controls: native gamepad mapping with the same ability count as PC.
+One matchmaking pool across platforms (no separate lobbies).
+Permadeath safety on mobile: disconnect grace periods and fair-death rules (Section 4.4), plus performance budgets for low-end devices (VFX budget, streaming distance, mob caps).
+
+3. The Resource System (The Engine)
+3.1 The Mana Pool (LOCKED)
+Mana is the single most important resource. It is not only ammunition; it is the character's stamina and will.
+Regeneration
+Out of combat: rapid regeneration.
+In combat: an extremely slow trickle (0.1% per 5 seconds).
+Stalling penalty: if the player is In Combat but passive (no casting, no damage dealt) for more than 10 seconds, regeneration halts completely.
+Recovery Training: successfully fighting and then resting slightly increases the Combat Regen stat over time.
+Capacity progression
+Mana Capacity is trained by stressing the Mana Circuit.
+Exhaustion Training: pushing Mana near zero yields the highest XP.
+The risk: pushing to absolute zero risks Mana Burn (Trauma).
+3.2 The Hollow State (0 Mana) (LOCKED, renamed)
+Reaching 0 Mana is a critical failure state. The original working name was an expletive; the in-game name is Hollow so the UI passes Roblox text moderation.
+Classic Mage (no weapon)
+Cannot Block, Dash, or cast standard spells. Movement speed is reduced.
+Overcharge (desperation move): spells can be cast using Health, at a high Health cost per mana point.
+Overcharge causes Soul Damage (Grey Health), which only heals by resting at a secure bed. Potions do not heal it.
+PROPOSED: Overcharge casts cannot be cancelled, so health-for-free feints are impossible.
+Sword Mage (weapon equipped): vulnerable but dangerous
+Can still parry with the physical blade, but the window is halved (0.2s to 0.1s).
+Parrying a spell without mana deals massive damage to Weapon Durability. If the sword breaks, the mage enters the Hollow state.
+Trauma
+A player knocked out by Mana Exhaustion receives a Trauma Debuff.
+Duration scales with how deep into negative mana they fell: mild exhaustion is 10 minutes, extreme overcasting is 45.
+Mercy Window: players with under 10 hours of total playtime have Trauma duration halved. PROPOSED: read account-level playtime, so new alts don't re-trigger it.
+Exhaustion warning (PROPOSED): a short visual and audio cue before 0 mana, so the failure state is never a surprise. It adds no HUD number.
+3.3 Survival System (LOCKED)
+Mages are mortal. The survival chain runs Hunger/Thirst, then Blood, then Health, then Death.
+Hunger (Satiation)
+Decays slowly (about 4% per in-game hour).
+Below 30%: Mana Regeneration is reduced by 20%, stacking with combat penalties.
+At 0% (Starvation): all low-hunger effects persist and Blood drains (about 0.1% per in-game second).
+Restored by eating hunted meat, purchased meals, or foraged plants. The Cooking skill improves food quality and satiation.
+Thirst (Hydration)
+Decays faster (about 8% per in-game hour).
+Below 30%: vision blurs at the edges.
+At 0% (Dehydration): Blood drains rapidly (about 0.25% per in-game second). Dehydration kills faster than starvation.
+Restored by water, potions, or certain fruits. Drinking from unknown sources (ponds, Aether plants) can poison you.
+Blood (Vitality)
+Blood is the body's physical integrity and the last buffer before death. The lower it falls, the slower Health regenerates.
+Drains from heavy physical hits, bleeding wounds, 0% Hunger, 0% Thirst, and certain curses and Aether effects.
+Below 10%: Health regeneration halts completely.
+At 0%: Health drains from 100% to 0 in one minute. Restore Blood or reach safety.
+Restored by having full Food and Water. Blood regeneration pauses during combat, so it cannot be cheesed.
+Survival in the Aether. Anything that looks edible in the Aether is a trap. Aether fruits poison mana, not health. Aether water may heal hunger but drains blood. There is no safe sustenance there. Bring supplies.
+Overworld foraging (PROPOSED). In the overworld, danger from food is learnable. A Foraging stat trains by correctly identifying plants, and mentors teach safe ones. In the Aether, nothing is learnable. This is the clearest example of Design Law 3.
+
+4. Combat
+4.1 Combat State Detection (LOCKED)
+Triggers: dealing damage, taking damage, casting aggressive spells at a target, parrying.
+Combat timeout: 15 seconds after the last trigger.
+Combat logging (LOCKED): with permadeath, disconnecting mid-fight must not be an escape.
+Trigger: the player disconnects (or leaves through the menu) while In Combat. Disconnecting out of combat is a normal safe save.
+The body: the character stays in the world for 30 seconds as a stationary, killable body. It cannot block, parry, dash or cast. Pending hits resolve against it normally.
+Reconnecting: if the player returns within the window, they resume in the exact same state (position, mana, health, statuses, cooldowns, any Reel or stun) and regain control. They can be killed after rejoining like anyone else.
+Window expires: the body despawns and the character is saved in place, including any damage taken. If the body is killed, normal death rules apply (Life lost, Soul Crack) and the player sees the result on return.
+Combat lock (PROPOSED): while the window is open, the account is locked to that server (like the Aether lock). Continue and friend joins route back to that exact server, and no other slot can be loaded. Switching slots from the menu counts as a disconnect.
+Server failure (PROPOSED): if the server shuts down during the window, restore the character from the snapshot taken when the disconnect began, so infrastructure failures never kill a character.
+XP and loot (PROPOSED): hits on a disconnected body earn no XP and no Insight, so bodies cannot be farmed.
+Fast rejoin path (PROPOSED): the menu checks the combat lock first and teleports straight to the locked server with no slot picker. Measure real rejoin times on mobile (relaunch, menu, teleport, streaming), because 30 seconds may be tight for crashes. The window is a tuning value.
+4.2 Frame Data Standard (PROPOSED)
+Every attack, spell and defensive action is data-driven and defined in milliseconds, in three phases:
+Startup: input to first active frame. This is the telegraph.
+Active: the hitbox is live.
+Recovery: the actor is committed and vulnerable.
+Required data fields per action: id, echelon, mana_cost, startup_ms, active_ms, recovery_ms, parry_class (Parryable, Breaker, Unparryable), hitbox shape, cancel rules, and telegraph tags (color and sound language, see 4.9).
+Every combat animation carries markers: Telegraph_Start, Active_Start, Active_End, Recovery_End, and Feint_Window where the attack allows a feint. Code reads timing from markers or data, never from hard-coded waits, so animation tuning and balance never drift apart.
+4.3 State Machine (PROPOSED)
+States: Idle, Casting (startup, active, recovery), Blocking, Reel, Guard Broken, Parrying, Parry Recovery, Dashing, Stunned, Hollow, Trauma.
+Spell cancel (Right Click / C): allowed during startup only. Cancelling forfeits part of the committed mana (tune: 50%), so feints cost real mana and cannot be spammed.
+Parry whiff: pressing F with no hit inside the window puts the player in Parry Recovery (tune: 400ms), where they can neither block nor parry. This stops F-mashing from being free. Holding F past the window becomes a Block.
+Dash: costs mana (tune) and grants short invulnerability (tune: 150ms). A cooldown (tune: about 0.8s) prevents chain-dash stalling. Unavailable at 0 mana (LOCKED).
+Action priority: Stun and Guard Break override everything. A started Parry cannot be interrupted by the player. Dash can cancel recovery only, never startup.
+4.4 Latency: Delayed Resolution (LOCKED principle, PROPOSED details)
+This replaces the v1 ping wording, which added latency to the parry window. Latency never widens a window. It shifts when a hit is resolved. The Mana Parry stays 0.2s, and the Physical Parry stays 0.2s (0.1s at 0 mana), for every player, whatever their ping.
+Order of events
+The server detects the hit during the attacker's active frames using its own hitbox check.
+The server creates a PendingHit (hit time, attacker, defender, spell, power).
+It looks up the defender's compensation C: the server-measured, smoothed one-way latency, capped at C_max (tune: 200ms).
+The hit resolves at hit time + C. Meanwhile, defender inputs (parry, block, dash) are recorded with a server-estimated input time.
+At resolution, checks run in order: dodge invulnerability covering the hit time (miss), then a parry input inside the window (parry), then an active block (block math), otherwise damage applies.
+Results are broadcast. The defender's client already predicted its own parry or dodge, so it feels instant. Attacker-side impact VFX is held until resolution, or a neutral contact spark plays that does not imply damage.
+State rules
+Eligibility snapshot: the defender's mana, position and i-frames are read at hit time. What the defender saw when the hit landed decides the outcome.
+Death during the delay: pending hits against a dead defender are discarded, with no double-kill credit.
+Attacker death or disconnect: the hit still resolves.
+Multiple pending hits (1v8): resolve in strict hit-time order. Reel and Guard Break count resolved hits only.
+Sacrifice mid-delay (OPEN): either cancel all pending hits on the sacrificer, or let them resolve first.
+Same delay everywhere: dodge i-frames and blocks use the same compensation as parries.
+Anti-cheat rules
+Latency is measured by the engine, never reported by a client call.
+Smooth with a rolling median (tune: about 5 to 10 seconds) and slew-limit changes, so a sudden spike earns no compensation.
+Never trust a client timestamp raw. Convert arrival time using the server's own estimate, and reject inputs outside plausible bounds.
+Players above C_max get no further help. Log how often each player is capped and use it to queue accounts for review, never to auto-ban. Parry statistics are review signals only, because top players look like cheaters to a naive check.
+Honest high-jitter connections (mobile, cellular) get a short grace period or rubber-banding before a permadeath loss.
+4.5 Blocking (The Barrier) (LOCKED, details PROPOSED)
+Blocking is a resource exchange, not a safety net.
+Cost: mana over time (drain) and mana on hit (impact). Barrier Stability: Incoming Spell Energy / Block Proficiency = Mana Drain.
+Reel: the first heavy hit causes Reel (hitstun, visual cracking, significant knockback; tune: about 600ms).
+Guard Break (the 2-Hit Rule): a second heavy hit while in Reel triggers Guard Break (stun plus vulnerability; tune: about 1.2s).
+Chain protection (PROPOSED): after a Guard Break ends, short guard-break immunity (tune: about 2s), so one mistake cannot become a death combo.
+Chip damage: high-density spells hitting a low-level block bleed through as a percentage of the spell's damage to Health (PROPOSED cap: 50%, so a block always helps).
+Group fights (OPEN): several attackers can chain Reel into Guard Break almost instantly. Recommended: Reel resistance that grows per recent Reel, or a minimum spacing between Reel triggers.
+4.6 Parrying (The Skill Check) (LOCKED, details PROPOSED)
+Mana Parry (Barrier): 0.2s window at the start of the Barrier cast, 0 mana. Success gives zero knockback, zero hitstun, and Tempo.
+Tempo: the attacker's recovery is extended (tune: +300ms) and the defender can act immediately. This is the frame advantage the original doc describes.
+Physical Parry (Sword): 0.2s with mana, 0.1s at 0 mana. Costs Weapon Durability, and parrying spells at 0 mana costs massive durability.
+Echelon 3 rule (OPEN, recommended): ultimates stay parryable but never free. A successful parry grants reduced Tempo and costs mana that scales with the echelon gap.
+Feedback: a distinct flash and sound on a successful parry, with no HUD element.
+Anti-spam: Parry Recovery, plus no stacking of Tempo from consecutive parries on the same attacker.
+Elite-parrier note. Because the Mana Parry is free, a perfect parrier can fight a readable mob almost indefinitely. Pressure on top players comes from variance, not cost: unparryable attacks, timing variance, and attrition (Section 4.9).
+4.7 Spell Clashing (Density and Math) (LOCKED, formula PROPOSED)
+Spells are physical objects with Density, organized into Echelons:
+Echelon 1: light projectiles (shards, bolts).
+Echelon 2: medium spells (fireballs, beams).
+Echelon 3: ultimates (meteors, Grand Magic).
+Resolution order
+Echelon gap. A 2-tier gap evaporates the lower spell (LOCKED for 1 versus 3). A 1-tier gap is undefined (OPEN). Recommended: the lower spell is destroyed and the higher spell loses energy equal to the lower's.
+Shape. Beams cut projectiles of equal density. AoE explosions cannot be clashed and must be Blocked or Dodged (LOCKED).
+Energy math. The stronger spell weakens the weaker, with Durability as a clash-power multiplier (tune the curve).
+Residual. The surviving spell continues with residual energy: smaller, slower, less damage.
+Formula (OPEN, recommended Design B). v1's formula and example disagree (Appendix A). Design A is a raw difference (800 into 1000 leaves 200). Design B treats the 1.25 as a clash bonus for the casting player: [Player Spell Mana x 1.25] - [Enemy Spell Mana]. Under B, 800 into 1000 cancels exactly, so a spell at 80% of the enemy's mana is a perfect counter. This rewards precise reads. Either way, the 1.25 needs a name and a rule for who receives it.
+Server rules: clashes resolve on the server when hitboxes overlap, and clients show predicted VFX and correct it. Anti-farm: clashing with dummies or the same partner repeatedly gives diminishing Durability XP, using Soul Resonance rules.
+4.8 Mobility
+Dash is directional (Shift on PC) and costs mana. It is not a stamina action.
+Movement speed drops at 0 mana (LOCKED).
+Flight is a complex spell, not a toggle (Section 5.10), and it costs mana continuously.
+4.9 Horror Combat Standard (PROPOSED)
+Aether Horrors are skill checks whose attack patterns vary per server. For that to be fair, the grammar of combat stays fixed while the values vary.
+Fixed telegraph language
+Parryable attacks, Unparryable attacks (AoE, ground slams) and Breakers each have their own color and sound signature, identical across all servers and Horrors.
+Every attack has a minimum telegraph (readability floor, tune per attack type). Variation can never push below it.
+Per-server variation parameters
+Speed multiplier range (tune: about 0.8x to 1.3x).
+Delay variance (hold-then-strike timing).
+Feint probability and chain length.
+Mix ratio of parryable to unparryable attacks.
+Fight shape
+The first two attacks of any fight use baseline timing, so a cold read can still learn the Horror's rhythm. Escalation follows in phases.
+Hidden difficulty scaling: estimate player skill from parry success rate, damage taken and time to kill. Raise pressure through delay variance, feints and unparryable mix, never through health or damage inflation, and never below the readability floor. This keeps top players uncertain without making fights feel cheap.
+Attrition: the Aether's lack of safe sustenance and near-zero in-combat regen means even clean fights wear a player down. Stalling for minutes stops working.
+Disengage rules (OPEN): can a player break aggro by running (which drains mana), or do duels end only in a kill or a death? This decides how punishing permadeath feels.
+Death recap (OPEN): a short replay of the last few seconds, so players can see what they misread without hand-holding during the fight.
+
+5. Progression (Usage-Based System)
+There are no skill trees and no levels. Attributes improve strictly through specific use. The goal: a dedicated player reaches a complete build in roughly a month, and a carried player gains almost nothing from being carried.
+5.1 Four Clocks (PROPOSED)
+Progress runs on four clocks at different speeds, so something is always about to pay off.
+Fast (minutes to hours): spell attributes (Cast Speed, Efficiency, Durability, Range). Something improves every session.
+Medium (days): Mana Capacity, flight stats, suppression, learning new spells.
+Slow (weeks): breakthroughs, the Mana Circuit's final stretches, life restoration.
+Generational: the Grimoire, the lineage ledger, Aether legacy.
+The old Deepwoken 40 to 60 plateau happened because one clock carried everything and the gate was repetition. Gates here ask for variety.
+5.2 The XP Model (PROPOSED)
+XP = Action XP x Threat x Resonance x Familiarity x Exposure, with level-up cost scaled by Rigidity (5.4).
+Action XP (LOCKED): landing a hit grants +50 XP. Casting and missing grants +0.1 XP. Spamming at a wall is mathematically inefficient.
+Threat (LOCKED, rule changed): stronger opponent 100.1% to 200%, equal 100%, weaker 0% to 99.9%. Judged against the strongest player in the party, so a weak player next to a strong friend sees a trivial fight and earns almost nothing, and so does the friend.
+Resonance (LOCKED): repeat fights against the same person decay (Section 8.1), keyed to the account.
+Familiarity (PROPOSED): each kill of a mob species cuts future XP from that species, recovering slowly. This ends 200-run grinds of one boss.
+Exposure (PROPOSED): full XP requires that the mob engaged you recently (attacked you or aggroed on you). Tagging a mob someone else holds pays little.
+Each term is a separate multiplier so each can be tuned, and so the Seer's feedback can say which one reduced your XP.
+Failure feedback (Seer system). After combat, subtle feedback appears if XP was reduced, likely as faint visual VFX, possibly with lines like these:
+"Your mana circuit resists further change." (Rigidity or Ripeness)
+"This foe no longer challenges you." (Threat)
+"Your souls have met too often." (Resonance)
+"You have fought this kind of creature too often." (Familiarity, new)
+The Seer NPC gives detailed post-hoc explanations without showing numbers.
+5.3 Trainable Spell Attributes (LOCKED)
+Every spell has independent stats that grow with use.
+Cast Speed: trained by successfully casting in active combat. Reduces startup frames.
+Durability (Density/Damage): trained by winning clashes or landing hits on high-defense targets (Golems). Increases the spell's Weight, helping it win clashes.
+Efficiency: trained by using the spell below 30% mana or in long engagements. Reduces base mana cost.
+Range/Size: trained by hitting at maximum distance or hitting multiple targets (AoE). Increases travel distance and hitbox size.
+5.4 Mana Circuit Rigidity (LOCKED intent, formula fixed)
+Mana starts as soft clay. As you specialize, neglected stats cost more to train. This forces commitment: a Sniper versus a Battle Mage. A Master of All is impossible within a standard lifespan.
+Formula fix (PROPOSED). v1's formula, XP Cost = Base XP x (1 + (TotalStatPoints / 100)^2), depends only on total points, so it raises all training equally and does not make neglected stats pricier. The fixed version uses points in other stats:
+XP Cost = Base XP x (1 + (OtherPoints / 100)^k), where k and a scale factor are tuned.
+With 80 in Range and 5 in Defense, training Defense is much more expensive (OtherPoints is high), while training Range stays cheap. Raise k or add a scale if you want a harsher penalty.
+Release valves for lock-in
+Descendants relearn fast through the Grimoire (a natural respec across generations).
+Surviving the Aether can soften Rigidity once (PROPOSED), since the dream reshapes the clay.
+5.5 Ripeness and Catalysts (PROPOSED)
+Each attribute breaks through in two steps:
+Ripe: its XP bar is full, earned by practice.
+Catalyst: a feat performed in a new context.
+Once an attribute is ripe, extra XP into it drops sharply (tune: about 25% flows through). The Seer's "your circuit resists change" line becomes the signal that you need something new, not more repetition. You cannot farm past a gate. You can only find its catalyst.
+Example catalysts (tune)
+Cast Speed: punish a parry against a stronger foe.
+Efficiency: win an engagement ending under 10% mana without hitting 0.
+Durability: win a clash against a higher-mana spell.
+Range: land a hit at maximum distance while flying.
+Capacity: survive near-burn exhaustion, then recover in a leyline basin.
+Rules
+Give each gate 2 to 3 valid catalysts, so players aren't stuck on one thing.
+A catalyst counts only if no stronger ally was nearby, which closes the carry route for gates.
+Minor breakthroughs change a spell's visible form. Major breakthroughs restore a Life (LOCKED), which makes progress feel protective in a game where progress feels fragile.
+Catalysts require exploring to find the right place or opponent. That is the forced-exploration payoff.
+5.6 Encounter XP Budget and Risk-Weighted Contribution (PROPOSED)
+Each mob or boss holds a fixed XP budget set by its base value and the threat gap. Participants share it by risk-weighted contribution, and a hit draws from your share. The total does not grow with party size, so groups split one budget instead of multiplying it.
+Contribution depends on whether the mob engaged you: attacks aimed at you, and whether you parried, dodged or blocked them. Standing behind a tank earns little. This also ties XP to the actions that train Block Proficiency, which cannot improve unless something attacks you.
+5.7 Hidden Power Score (PROPOSED)
+Threat needs something to compare. Define a server-side score from Mana Capacity, top spells' effective strength, and defensive proficiency, blended so no single stat dominates. It drives:
+Threat scaling for XP.
+Mana Pressure gating in high-Echelon zones.
+Aura color in Mana Vision (suppression changes what others see, never the score).
+Hostile Adaptation in the Aether.
+It never appears as a number, preserving the no-levels rule.
+5.8 Environment Attributes and Novelty XP (PROPOSED)
+Trained by use like spell stats, and counted toward Rigidity so explorers and duelists specialize differently:
+Pressure Tolerance: trained by surviving high-density zones.
+Dead-Zone Efficiency: trained by stretching a Mana Battery.
+Foraging: trained by correctly identifying plants.
+Novelty XP: the first fights against a new mob type grant a bonus under Threat. This rewards roaming and keeps hotspots from being farmed.
+5.9 Mana Capacity (LOCKED)
+See 3.1. Exhaustion Training gives the highest XP, with Mana Burn as the risk. Capacity breakthroughs need a catalyst (5.5).
+5.10 Flight Training (LOCKED)
+Flying is a complex spell, not a toggle.
+Altitude Tolerance: trained by flying near the Death Zone limit. Raises the ceiling before exponential drain.
+Duration: trained by long-distance travel.
+Agility: trained by sharp turns and combat maneuvering.
+5.11 Mana Suppression Training (LOCKED)
+Novice: the aura fluctuates. A trained eye sees the wave glitch or wobble every few seconds.
+Training: keeping Suppression active under stress (near other players or mobs). Using it at all also trains it, with combat training it a bit faster.
+Master: the aura is a perfectly flat line, indistinguishable from a weak mage. Requires high XP investment.
+5.12 Spell Acquisition (LOCKED)
+Players do not start with a full spellbook.
+Mentors (guilds): safe, fast learning. Requires social connection.
+Spell Tomes: rare books from dungeons or NPCs.
+Learning by Suffering (solo path): taking damage from a spell leaves a Residual Mana Signature. Meditating on the wound builds Insight (0 to 100%). At 100%, the spell is learned without a tome.
+Anti-exploit rules
+Damage scaling: Insight scales with damage taken relative to max HP.
+Diminishing source: repeated hits from the same caster give 100%, 50%, 25%, then 10%.
+Healing pause: being healed mid-process pauses Insight for 60 seconds.
+PvP collusion: Soul Resonance decay applies to Insight gain.
+Time investment: 5 to 10 meaningful hits from varied sources. Bleed Zones (Section 11.5) supply that variety.
+5.13 Parallel Casting (LOCKED)
+Unlock: a specific mentor teaches it, or the rare Tome of Split Focus in high-level dungeons.
+Mechanic: cast two spells at once (for example Flying plus Fireball).
+Cost progression: Novice 3x total mana; Competent 2.2x (fast to reach, to encourage use); Master 1.5x; full mastery 1.0x.
+XP requirement: you must hit targets while multitasking.
+Feedback: faint visual cues or dialogue during parallel casting.
+5.14 Legibility Without Numbers (PROPOSED)
+Spells visibly evolve at thresholds (a new cast animation or VFX tier).
+A tell before a breakthrough (a faint hum or aura flicker) builds anticipation.
+The Seer reads your circuits in qualitative bands and gives riddle-style hints about what is ripe to break. This keeps the no-hand-holding rule while making progress feel directed.
+5.15 Pacing Bands (PROPOSED, all guesses to tune from data)
+Awakening (about 0 to 5 hours): fast gains, first spells, the Trauma mercy window.
+Apprentice (about 5 to 40 hours): attributes climb, first Major breakthrough, three to five spells.
+Adept (about 40 to 150 hours): specialization locks in as Rigidity bites, Echelon 2, a guild.
+Master (150+ hours): Echelon 3, flat suppression, competent Parallel Casting, Aether-scale challenges.
+Target: a dedicated player reaches "build complete" in roughly a month. Set target times for each band, then solve for Base XP, not the reverse.
+5.16 Mentorship and Endgame (PROPOSED)
+Mentorship loop: mentors earn Legacy (a hidden prestige stat) only when students hit breakthroughs on their own, with diminishing returns per student and a cap. Payouts are delayed and tied to the student's independent feats, so mentorship cannot become a boosting channel. Legacy unlocks mentor-only techniques (such as teaching Parallel Casting) and feeds the lineage ledger.
+Endgame goals: Grand Magic (Echelon 3) acquisition through rituals or trials gated by catalysts; guild control of leylines; Aether expeditions for relics; the lineage ledger of generations, mastered spells and Sacrifices.
+5.17 Optional Systems (OPEN)
+Consolidation: training XP stays provisional until you rest at a secure bed, and death loses unconsolidated progress. A soft daily consolidation cap (diminishing, not a wall) blunts marathon powerleveling. Recommended: skip at launch.
+Lineage marks: a spell learned from a mentor, a Tome, or suffering carries a mark that biases growth (mentors favor Cast Speed, Tomes favor Durability, suffering favors Efficiency under duress). Recommended: skip at launch.
+Scars (stretch): surviving Mana Burn or heavy Soul Damage leaves a permanent minor trait with a trade-off. Adds many balance cases. Recommended: post-launch.
+5.18 Progression Guardrails (PROPOSED)
+Macros and dummies: cap dummy XP at Apprentice levels, and decay XP from identical inputs at a static target.
+Monetization: never sell XP, boosts or breakthroughs. This contradicts the anti-boost design.
+PvE parity: with a small playerbase, PvE must be a complete training path.
+
+6. Customization (Glyphs and Allocation)
+6.1 Glyphs (LOCKED)
+Spells have sockets. Players insert Glyphs found in the world.
+Glyph of Expansion: more size, less speed.
+Glyph of Focus: more damage, more cast time.
+6.2 Mana Allocation (Mastery) (LOCKED)
+At high levels, mages can Overcharge spells by dumping extra mana via a slider in the spellbook. Diminishing returns: adding +100% mana gives about +25% damage. This prevents one-shot builds while allowing heavy hits.
+
+7. Archetypes
+Your equipment and training define your class.
+7.1 Classic Mage (LOCKED)
+Range, zoning, pure mana. High burst, versatility, access to all elements. Physically frail, with no defense at 0 mana.
+7.2 Sword Mage (Hybrid) (LOCKED)
+Aggressive, close range.
+Mana Reinforcement: at 0 mana the sword is brittle iron that bounces off armor. Infused, it gains sharpness and durability.
+Visual durability cues (no UI bar): 100 to 50% no change; 50% faint cracks; 25% bigger cracks and a creaking sound on block; 0% the sword shatters.
+Projection: can cast Slash spells (short-range waves) and most spells classical mages can use.
+Environment synergy (PROPOSED): Dead Zones suit sword-first cultures, while Leylines favor mages. Different builds take different routes through the same world (Section 11.8).
+7.3 Full Swordsman (future)
+Not yet designed. Likely added later for full physical damage types.
+
+8. Social Systems and XP Logic (Anti-Cheese)
+8.1 Soul Resonance (Diminishing Returns) (LOCKED)
+The game tracks unique player interactions. Keyed to the account (PROPOSED), so alts cannot fight their own main.
+1st fight: 100% XP. 2nd fight: 20%. 3rd or later: 0%.
+Reset timer: 12 to 24 in-game hours. Every time you fight the same person, the timer increases by 2 to 4 hours.
+Applies to Insight gain as well as XP.
+8.2 The Threat Requirement (LOCKED, rule changed)
+XP scales with the power gap, judged against the strongest party member (Section 5.2). A Master killing a Fresh Spawn earns about 0%.
+8.3 Guild Sparring (LOCKED)
+Fighting a guild member applies a flat 90% XP penalty. Sparring is for skill practice, not stat farming.
+8.4 Anti-Boosting Summary (PROPOSED)
+A carry cannot help someone progress because: Threat is judged against the strongest party member; XP budgets don't grow with party size; Exposure requires the mob to engage you; Familiarity decays repeat kills; gates need catalysts done without a stronger ally nearby; and Resonance decays repeat player fights.
+
+9. Life, Death and Legacy
+9.1 The 3-Life System (Soul Fracture) (LOCKED)
+Total lives: 3.
+Losing a life (lives 1 and 2): death in the overworld creates a Soul Crack. Respawn at the nearest Inn. You keep your inventory, but Armor Durability drops to 0 (Broken) and must be repaired. You lose 10% of current Mana Capacity progress (the current bar, not total capacity).
+Restoring a life: lives are restored by a Major Breakthrough (a hidden usage milestone).
+Identification: visit a Seer NPC to check soul status. There is no HUD element for this.
+9.2 Slots as Lineages (LOCKED)
+A character slot is a lineage, not a single life. When a character dies in the Aether, the descendant takes over the same slot. Death never consumes a slot, so players are never buying retries, and free players never run out. See Section 18 for slot rules.
+9.3 Legacy (The Wipe) (LOCKED)
+Condition: dying in the Aether World.
+The loss: the character is deleted.
+The drop: a Grimoire spawns at the Inn or spawn point (to prevent it falling into voids).
+The descendant: a new character in the same slot retrieves it.
+Effect: reading the Grimoire grants an XP multiplier (v1: 500%) for spells the ancestor mastered. It accelerates re-learning but does not teach spells instantly.
+Loophole fix (PROPOSED): the multiplier accelerates the climb, but each generation re-earns the breakthrough catalysts. Otherwise generation five skips the game.
+Discovery memory (PROPOSED): the Grimoire also holds faded marks for places the ancestor discovered. Because the world shifts (the Drift), some marks may be outdated or gone. This ties legacy to exploration and makes death more than a lost character.
+Ledger (PROPOSED): the Seer can read a lineage ledger (generations survived, spells mastered, Sacrifices made), giving long-term goals without levels.
+
+10. The Aether World (The Depths)
+10.1 Overview (LOCKED)
+Dying on your 3rd life drags the character into the Aether World: a surreal, high-difficulty plane with no Mana Zones (OPEN: confirm this means no leyline or dead-zone mechanics, while weather such as Mana Storm still applies). The Aether is not a fixed location. It is a dream, and dreams are never the same twice.
+Aether Horrors have no elemental weaknesses, but they can have elemental buffs. You cannot exploit weaknesses, but they can exploit strengths. Their attack patterns vary per server, within the rules of Section 4.9.
+10.2 Per-Server Generation (LOCKED)
+Terrain: procedurally generated (floating islands, inverted gravity, impossible geometry). No two servers share a layout.
+Mob pool: each server draws a randomized subset of Horrors.
+Result: surviving once teaches you nothing about the next Aether. Guides and wikis cannot save you. They can only help with structure.
+10.3 Terrain Types (LOCKED)
+Each server rolls one or more archetypes. Some servers combine 2 to 3 (for example Foggy Caverns, Mountainous Void, Acid Overgrown).
+Infinite Plane: flat, endless, nowhere to hide.
+Variable: mixed terrain with no consistent logic.
+Fog Realm: dense fog and limited visibility. Ambush territory.
+Caverns: tunnels and chambers. Claustrophobic, sound echoes.
+Pillar Forest: tall stone and crystal pillars. Vertical combat, fall risk.
+Overgrown: dense poisonous plants and trees. Everything looks edible. Nothing is safe.
+Mountainous: steep cliffs, altitude matters, exhausting traversal.
+Void Pockets: floating islands over infinite darkness. A fall is instant death.
+Acid Pools: corrosive terrain draining health and blood rapidly.
+Lava Fields: extreme heat. Fire spells and fire-infused mobs are both stronger.
+Aquatic and Magma Caverns are unlikely to ship (per v1 notes).
+10.4 Layouts (LOCKED)
+Finite layouts (about 85% combined)
+The Convergence: the most common. All terrain types in one contained area. Finite, varied, standard mob pool, easiest to navigate.
+The Layered Depths: multiple vertical layers of pillars, voids and caves. Floating islands, jungle-like, vertical combat, fall risk.
+The Overgrown Void: deadly plants and fauna over a void. Poison everywhere. The environment is the enemy.
+The Broken Civilization: broken islands, pathways and ancient ruins. Platforming, lore fragments.
+Infinite layouts (about 14% combined, rarer and more dangerous)
+The Endless Jungle: Layered Depths plus Overgrown, but infinite. Larger mob pool, no edges.
+The Infinite Depths: Layered Depths plus Broken Civilization, infinite. Caves and deep exploration.
+The Acid Abyss: infinite multi-layer caves with constant acid rain, darkness, poisonous plants and elemental mob buffs.
+The Grey Marble: an infinite flat grey plane with broken cities. Outside is mostly safe but has no food or water. Cities have dangerous mobs and hidden resources. Rifts and Trials are significantly rarer.
+The Evolving Fog (about 1%, always Alone): an infinite world mimicking the overworld but extremely foggy. Visibility is the worst, and over time the terrain evolves to resemble The Convergence. May have unique monsters. The hardest layout.
+10.5 Mutations (LOCKED)
+Mutations modify the base layout. They can stack, but stacking is rare.
+Quarters: the map splits into 1 to 6 chunks separated by Water (swim or boat), Void (find pathways or fly; a fall is death) or Acid (find safe routes; crossing drains health and blood). Bridges or special technology may exist for the worst separations.
+Elementals: monsters gain elemental buffs (strengths only). Weather indicates the element: snowing means ice mobs that slow; raining means water and lightning mobs with weaker fire spells; heatwave means fire mobs that burn on hit; void mist means void mobs that drain mana on hit. Weather also debuffs players.
+Alone: about 10% of instances (excluding first-timers). No other players can join and no rescue is possible. Rifts and Trials spawn more often as compensation. Mobs are customized to counter the player (see 10.7). This is the same mechanic as the Solo Instance in v1 and is merged here.
+10.6 Weather (LOCKED)
+Each server rolls weather that persists or cycles:
+Clear: no effect. Rare mercy.
+Rain: reduced visibility, water spells cost 20% less.
+Acid Rain: continuous low damage, armor degrades, blood drains slowly.
+Thunderstorm: random lightning strikes. Flying is extremely dangerous.
+Fog: severely reduced visibility (about 30 studs). Easy ambushes.
+Mana Storm: mana regeneration fluctuates wildly (sometimes boosted, sometimes drained). Also planned for rare overworld biomes.
+Blood Moon, Void Wind and Aquatic hazards are unlikely to ship (per v1 notes).
+10.7 Alone Instances and Hostile Adaptation (LOCKED, details PROPOSED)
+First-time Aether visitors cannot roll an Alone instance.
+Mobs the player has never fought appear with certainty, and weather and elements counter the player's strongest spell type.
+Design intent (confirmed): Alone instances have few but hard mobs that duel you one at a time. They are skill checks regardless of power, built so even a top player feels real danger. Shared instances lean toward team play.
+Specialist guardrail (PROPOSED): the counter should pressure specialists, not neutralize them. Hostile Adaptation is capped and never a hard counter, because Rigidity already pushes players into deep specialization.
+Hidden difficulty scaling (Section 4.9) keeps top players uncertain.
+10.8 Persistence and Server Lock (LOCKED)
+State persistence: the game saves exact position, nearby mobs and the full layout per player when you disconnect. You cannot reroll by disconnecting. If a server shuts down, you respawn into the same state. Alone instances are fully persistent.
+Server lock: once in the Aether you are bound to that instance. Disconnecting returns you to it. If your server shuts down before you escape or die, you enter a new Aether instance (but you have already waited out the dangerous period).
+Account-level lock (PROPOSED): the lock applies to the whole account. A player cannot switch to another character slot to avoid the Aether character, and a friend join never overrides it.
+10.9 Spawning and Exploration Pressure (LOCKED)
+Staying within about a 100-stud radius raises the chance that mobs you have never fought spawn and auto-aggro. The dream wants you to explore.
+Early visits spawn fewer monsters, but past a point exploration cannot help.
+Ganking encouragement: players who kill other players have a higher chance of a Rift or Trial spawning near them.
+The unlearnable nature: many Aether plants and trees look like overworld food but are poisons that shred mana, poison the mana bar, poison health regen, or just deal damage. A Horror that was slow and telegraphed last Aether may be fast and feinting this one.
+10.10 Survival Odds and Escape (LOCKED)
+Escape: find a Rift or complete a Trial.
+Solo: about 15% survival. For a highly skilled player this can rise to about 75%, especially in an Alone instance, which also prevents ganking by other groups.
+Rescue party: about 40%. For a highly skilled guild or a top-10 guild, about 90%, with no guarantee for each member.
+First Visit Mercy (hidden): on a player's first-ever Aether visit, one guaranteed visible escape Rift spawns within sight of the entry point. It is not announced. Once per account (PROPOSED).
+10.11 Rescue Parties (PROPOSED)
+Roblox does not let friends join a reserved server from their friends list, so rescue is an in-game system, not a Join button:
+A deliberate overworld action (a rift or ritual) is required to enter.
+Eligibility checks apply (guild membership or positive Soul Resonance).
+An access code is stored for the rescue and used to teleport the party in.
+Alone instances reject entry.
+A deliberate action keeps rescue tense and meaningful.
+10.12 The Final Act: Sacrifice (LOCKED)
+This rare Aether tool can be discovered with enough time in the Aether. If a player knows they are doomed, they can pour all their remaining mana into a temporary Rift for nearby allies.
+Bonus: the Grimoire gains a +100% XP bonus for this heroic death (v1 states 700% total, which does not match the 500% base; see Appendix A).
+Lore: "Those who die for others burn brightest in memory."
+Minimum power: requires 500+ Mana Capacity.
+Rift quality scales with Capacity: 500 to 1000 lasts 5 seconds and flickers; 1000 to 2000 lasts 15 seconds and is stable; 2000+ lasts 30 seconds and pulls allies toward it.
+Soul Resonance requirement: the Rift saves only players with positive Resonance with you (fought alongside, traded with, or shared guild history). Strangers cannot benefit, so alts create nothing.
+
+11. The Overworld
+11.1 The Gradient (PROPOSED)
+The overworld is the Aether's gentler edge, not a separate set of rules. A gradient from learnable to unlearnable gives players a risk dial:
+Anchors: towns and training grounds. Stable and reliable.
+The Drift: regions whose states shift over time (11.4).
+Bleed Zones: places where Aether rules leak in, near rifts and ruins (11.5).
+The Aether: fully unlearnable.
+11.2 Anchors (PROPOSED)
+New players still need predictable training spots, especially at low population. Anchors host cities and towns, Inns, the Seer, mentors, and reliable PvE training. They have no hotspot grinding (see spawn budgets in 11.4).
+11.3 Mana Zones (LOCKED)
+High Density (Leylines): fast regen, larger spells. PvP hotspots.
+Dead Zones: zero regen. Mana Battery artifacts required to survive.
+Mana Pressure: high-Echelon zones crush low-stat players, draining mana and health rapidly (natural gating).
+These double as geography: Leylines suit mages, Dead Zones suit sword-first cultures, and Pressure Peaks hold ancient beasts.
+11.4 The Drift (LOCKED concept, details PROPOSED)
+The problem with Deepwoken is fixed hotspots that players farm. The Drift removes reliable coordinates: regions change over time, so "where do I grind" becomes "how do I explore." A grassland may be ocean on the next visit, and a week later a grassland over an ancient civilization with void winds and dangerous mobs. Days later it is gone again.
+Duration (confirmed): the shortest state lasts 30 minutes. Others last 12 hours, a day, a couple of days, with a maximum of 2 weeks. Recommended weighting: about half last 30 minutes to a few hours, about a third last up to a day, a small share last multiple days, and 1 to 2 week states are rare enough to remember.
+Implementation (PROPOSED)
+Seeded states: each region's state comes from a seed (region ID plus time window), so everyone on a server sees the same thing, and any state can be reproduced for debugging.
+Variable lengths: split time into fixed 2-week blocks, and have the seed generate a sequence of states and durations that fills each block. Any server computes the current state from the clock alone, with no saving or syncing.
+Premade states: each region has 2 to 4 hand-built states (for example grassland, ocean, grassland over ruins), swapped by seed. Reuse the same ruin kits across regions.
+Server schedule (OPEN): recommended is a per-server seed, so Discord trackers cannot solve it, with spawn budgets and per-account diminishing returns to blunt server hopping.
+Readable endings: states do not change while someone is inside. A short decay phase comes first (spawns stop, then signs appear: flickering mana, fading color, animals leaving). The change completes out of sight, and something is left behind (a mana echo) so players can tell something was here.
+Spawn budgets: each state holds a fixed budget of mobs and rewards. A gold mine holds a set amount before it is mined out, even if the state continues. Short states can have higher reward density, and long states lean toward exploration, lore and secrets. Spawns come from weighted tables, not fixed spawners.
+Tells: subtle signs before a shift or reveal (a Mana Vision shimmer, animals leaving, a color drift, a low hum). Skilled explorers learn to read them.
+Safety: dangerous reveals are layered. A sign comes first, then the threat, so a first death feels like the player's mistake.
+11.5 Bleed Zones (PROPOSED)
+Places where Aether rules leak in, typically near rifts and ruins:
+Exploration pressure: staying in one place draws mobs you have never fought (the Aether rule, intensity turned down).
+Light Hostile Adaptation: a small share of spawns lean against your most-used element. Capped, never a hard counter.
+Deceptive flora: plants look edible and are not. In the overworld, danger is learnable through Foraging, mentors and Seer lore. In the Aether, nothing is learnable.
+Variety supply: they provide the varied sources Learning by Suffering needs.
+11.6 Fissures (PROPOSED, OPEN: failure cost)
+Small, seeded Aether pockets that open in Bleed Zones: a short run with one lighter Horror and Aether-only rewards such as Tome fragments. Fissures teach the Aether's telegraph language before a first real visit, which helps the cold-read fairness problem. They are clearly signposted before entry. Recommended: a failed run costs a Life like any overworld death.
+11.7 Weather Fronts and Seasons (PROPOSED)
+Forecastable weather: overworld weather mirrors the Aether's (rain, mana storm, fog) but can be predicted by the Seer, inn gossip or a trained eye, so players plan around it.
+Elemental fronts: snow, heatwave and void mist move through regions on rough paths, bringing mobs of that element. Players can chase one for rewards or avoid it.
+Long seasons: 1 to 2 week Drift states can be region-wide events, such as a flood that splits the lowlands into islands.
+11.8 Exploration Design (PROPOSED)
+The expedition loop: mana is stamina, hunger and thirst drain, and Soul Damage needs a secure bed. That is an extraction loop: pack, push into the unknown, decide when to turn back, with the Inn as home base. Routes are mana puzzles (flight costs mana, pressure zones drain it, dead zones stop regen).
+Builds see different maps: a mage can fly over a chasm a sword mage walks around.
+Landmarks and tells: visible far-off silhouettes (a mana light pillar, a floating ruin) pull players. Secrets and shifting regions get subtle tells. No map markers.
+Rewards that are not XP: Spell Tomes, glyph sources, hidden mentors, techniques (such as Split Focus), shortcuts and Inn locations. This keeps exploration from becoming a farm route.
+Rumors instead of quest markers: Inns and the Seer give cryptic, time-limited hints ("lanterns over the marsh this week"). They expire with the state, so wikis cannot hold them.
+Grimoire memory: inherited map marks for places that may no longer exist (Section 9.3).
+Secure beds in the wild (OPEN): craftable or consumable camps could extend expeditions at PvP risk.
+11.9 Dungeons (LOCKED)
+Dungeons are seamless and not instanced. A team can seal a Boss Room door. Outside players can break the seal, but only with a massive, coordinated Mana Dump (a mana-density check, see Section 13).
+11.10 Flight (LOCKED)
+0 to 100ft: normal drain.
+100 to 200ft: exponential drain.
+200ft+: instant exhaustion.
+LOD: players fade at extreme distances and appear as glowing mana orbs.
+11.11 Regional Template and Scope (PROPOSED)
+Build 3 to 4 regions from one template: one mana-zone type, one faction or culture, one bestiary threat, one survival challenge, and one secret that connects to the Aether. Ten to fifteen handmade set pieces beat large procedural filler. Factions can be schools of thought (efficiency and suppression, burst and overcharge, a hermit order of suffering, a sword lineage that treats mana as a crutch) who disagree about what the Aether is.
+
+12. Law, Crime and Bounties (PROPOSED, concept confirmed)
+Towns and cities have their own police forces and armies. Villains are hunted.
+Investigation: crimes leave Residual Mana Signatures that guards can read. Mana Suppression hides yours, giving villains a use for it.
+Jurisdiction: heat is per town or region, decays over time, and needs a witness or a signature trace. Crimes in the wilds do not count.
+Escalation ladder: warning, guards, hunter squads tuned to counter your archetype, a named Marshal as a duel boss, then waves of reinforcements.
+Escape routes: leave the jurisdiction, break sight and suppress your aura, pay a fine, or hide in Dead Zones and Bleed Zones where mage guards are weak.
+Surrender: submitting means fines, confiscation or jail instead of death.
+Guard kills cost a Life (OPEN, recommended yes): otherwise villains have no stakes. Warnings must be clear, since a crime is a choice and the player always has notice and a way out.
+PvP definition (OPEN, recommended): crimes against players in settled areas raise heat. The wilds do not. This gives victims recourse, and player bounty hunters become a role.
+Anti-abuse: guards give almost no XP, so villain loops are not farms. Bounties are paid from the criminal's assets, so alts cannot launder them. Guards target only the wanted player, so nobody can kite them onto others.
+Performance: small squads arriving in waves, limited pathfinding calls, and a cap on concurrent guards per server.
+
+13. Destruction (PROPOSED, concept confirmed)
+Three tiers: cosmetic props (trees, fences, crates) break freely and regrow. Structures (walls, towers, bridges) have HP. Protected buildings (Inns, the Seer, spawn points) cannot be fully destroyed, or respawning breaks.
+Ward values: buildings have a ward value in mana, reusing the Boss Room seal mechanic. A spell's Echelon sets what it can breach: Echelon 1 chips wood, Echelon 3 levels stone, and warded walls need a coordinated Mana Dump.
+Server state, client debris: build each structure from dozens of premade modules (not hundreds), track a destroyed flag per module on the server, and let clients simulate short-lived debris. Cap simultaneous destruction events, especially for mobile and console.
+Scars heal: builders restore damage over hours, so the world does not degrade permanently and per-player destruction data is never persisted.
+Terrain: keep runtime deformation to small craters, since it is costly to replicate.
+Crime link: destroying property raises heat.
+Build order: guards and heat first, then prop and ward destruction, and siege-scale armies last.
+
+14. Bestiary (Rock-Paper-Scissors Balance)
+PvE encounters force specific archetypes to shine or struggle.
+Mana Beasts (Wolf, Bear): absorb spells. Counter: Sword Mage. (LOCKED)
+Golems and Constructs: reflect spells. Counter: Sword Mage (blunt force). (LOCKED)
+Phantoms and Wraiths: physical immunity. Counter: Classic Mage (pure mana). (LOCKED)
+Volatile Flora (Slimes): contact damage. Counter: Classic Mage (range). (LOCKED)
+Aether Horrors: no weaknesses, pure skill checks (Sections 4.9 and 10).
+Guards and Marshals (PROPOSED): human-scale enemies built for pursuit and pressure, scaled to the wanted player's archetype (Section 12).
+All mob XP is subject to Familiarity decay (Section 5.2), so no species is a permanent farm.
+
+15. Stealth and Perception
+15.1 Mana Suppression (LOCKED)
+Hides power level and spell intent. It emits a low-frequency hum (a heartbeat sound) if the observer is perceptive enough. Training: keeping suppression active near threats (Section 5.11).
+15.2 Mana Vision (PROPOSED definition)
+Mana Vision is the Sense ability that lets a player read auras. It is not on by default for new characters. Auras and threat colors are only visible through it. v1 referenced Mana Vision without defining it.
+15.3 The Sense Gap Rule (LOCKED)
+Suppression much greater than Sense: complete silence. The Master is undetectable to the Novice.
+Suppression about equal to Sense: the audio hum is audible.
+Sense greater than Suppression: the UI reveals the target's true threat level (color-coded aura).
+Suppression hides what others see. It never changes the hidden Power Score (Section 5.7).
+
+16. Controls and UI
+16.1 PC Controls (LOCKED)
+Movement: WASD.
+Dash: Shift (directional).
+Block/Parry: F.
+Cast spells: 1 to 7 (customizable hotbar).
+Weapon toggle: R (Casting Stance or Sword Stance).
+Cancel spell: Right Click or C.
+Interact/Execute: E.
+16.2 Mobile and Console (PROPOSED)
+See Section 2.3. Mobile uses 4 to 5 active abilities with loadout presets and contextual buttons. Console uses native gamepad mapping. No platform-specific parry windows.
+16.3 HUD (LOCKED)
+Minimalist: Health bar (orange), Mana bar (blue).
+No levels: no numbers above heads.
+Soul status: hidden. Check at a Seer.
+Auras: only through Mana Vision.
+Durability: no UI bar. Visual cues only (sword cracks, Section 7.2).
+Progress: conveyed through visual spell forms and Seer hints, never raw numbers (Section 5.14).
+16.4 New Player Experience (LOCKED)
+There is no hand-holding. It is a hard, difficult game. (PROPOSED softening within that rule: visible landmarks, Anchor towns, mentors, and the Aether's first-visit mercy rift give new players something to follow without a tutorial.)
+
+17. Economy, Crafting, Inns and Starting Character
+17.1 Currency (LOCKED)
+Mana Crystals are dropped by mobs and bosses and used for repairs and purchases.
+17.2 Item Dropping (LOCKED, ferrying rule PROPOSED)
+Allowed: Glyphs, Weapons, Armor.
+Not allowed: Spell Tomes (soul-bound on use) and Grimoires (character-bound).
+Alt-ferrying rule (PROPOSED): economies are per slot, and drop and pickup between slots of the same account is blocked, so alts cannot funnel gear and crystals to a main.
+17.3 Crafting (LOCKED)
+Glyphs: created by enchanters using rare materials.
+Weapons: forged by blacksmiths. Better materials give higher durability.
+17.4 Inns and Respawn (LOCKED)
+Initial spawn: players are assigned a random Inn on character creation.
+Inn rental: rent a different Inn for 1, 6 or 18 Mana Crystals (daily, weekly, monthly, paid upfront).
+Eviction: if rent expires unpaid, the player is evicted. The next respawn washes the player ashore on a random island (a Safe Zone, but far from civilization).
+Reclaim: the player can re-rent a preferred Inn at any time.
+17.5 Starting Character (LOCKED)
+Mana Capacity: 100 (base).
+Mana Crystals: 5.
+Spells known: none. Mages and sword mages use melee weapons first.
+Equipment: nothing, or a basic staff or sword.
+Lives: 3.
+17.6 Monetization (LOCKED direction, details PROPOSED)
+Sold: character slots (Section 18.5) and cosmetics.
+Never sold: XP, boosts, breakthroughs, lives, or any combat power (Design Law 6).
+Slots as gamepasses: permanent unlocks use a gamepass, which Roblox tracks. Ownership is checked server-side every time the menu loads.
+
+18. Accounts, Slots, Places and Data
+18.1 Places (PROPOSED)
+Menu (start place): a lightweight place for character slots, character creation, settings and Continue. It is the only gate that loads characters.
+Overworld: public servers with streaming.
+Aether: reserved servers only (one per player or party).
+Dungeons are seamless and live inside the overworld place. The menu is a separate place so it loads fast (important on mobile), friend joins can be handled before the heavy world loads, and session locks are taken in one place. The cost is one extra teleport hop per launch, mitigated with a custom loading screen.
+18.2 Menu Contents (PROPOSED)
+Continue: loads the last-used slot.
+Characters: the slot list (name, Inn, lineage generation, in-game time), with no stats shown.
+Create character: assigns a random Inn (Section 17.4).
+Settings: controls, mobile and console options, accessibility.
+18.3 Joining a Friend (PROPOSED)
+The menu reads the join's follow ID (set when a player joins through a friend).
+It shows a slot picker with "Joining [Friend]". It never silently loads a slot, because permadeath makes the choice matter.
+It looks up where the friend is. If they are in a public overworld server, it teleports to that server, with a fallback to any server if it is full.
+If the friend is in the Aether: the lookup does not work for reserved servers (the lookup is unusable for them), so the follow fails by design. The player is sent to the normal overworld with a short message. Rescue is a separate in-game system (Section 10.11).
+Roblox's behavior for friend joins into reserved servers has changed over time, so verify it on a published build.
+18.4 Guards on Entry (PROPOSED)
+The overworld does not trust that players came through the menu. Join links can land players in any place, and teleport data can be tampered with by clients. The menu server writes a short-lived ticket (for example in MemoryStore) that the overworld checks, and players without one are sent back to the menu.
+The Aether lock and the combat lock beat everything: if the account is bound to an Aether instance or has an open combat window (Section 4.1), Continue and follow both route to that exact server.
+Teleport failures: handle failed teleports by leaving the player in the menu with a clear message, and persist state before every teleport.
+18.5 Character Slots (LOCKED)
+One slot is free, and nine are paid (ten total).
+A slot is a lineage (Section 9.2): Aether death gives a descendant in the same slot, never a lost slot.
+Keyed to the account, not the character (PROPOSED): Soul Resonance, First Aether Visit Mercy, Trauma mercy playtime, and the Aether lock.
+Per-slot economy (PROPOSED): items cannot move between slots of one account (Section 17.2).
+Slot switching mid-fight counts as a disconnect for combat logging, and the account stays combat-locked to that server for the 30-second window (Section 4.1).
+Staged release (OPEN, recommended): consider launching with fewer paid slots (three to five, in bundles). Adding slots later is easy. Taking them away is not.
+18.6 Data Model (PROPOSED)
+Account profile: slot count, purchased flags, account-level flags (first Aether visit used), total playtime, the Aether lock state, and the combat lock (server ID plus expiry).
+Character profiles: one per slot, each session-locked while in use.
+Slot index: a small record the menu reads to list slots without loading full profiles. Full profiles load only on selection.
+Soul Resonance: compact per-pair records keyed to accounts with expiry, within DataStore and MemoryStore limits.
+Session locking from day one (a ProfileStore-style approach). Permadeath, lives and inheritance make a duplication or wipe bug catastrophic.
+Rollback path: versioned backups, and migrations written as safe contract changes.
+
+19. Technical Architecture and Security
+19.1 Netcode and Authority
+Server-authoritative combat with client prediction (Section 4.4). Roblox has no built-in lag compensation, so delayed resolution is the compensation mechanism.
+Custom projectiles: raycast or shapecast, not physics parts. Replication cost with many players casting is a real constraint.
+Streaming: tune StreamingEnabled for the open world, seamless dungeons and mobile.
+Aether load: an Alone instance is one server per player, so budget server cost accordingly.
+19.2 Performance Caps (PROPOSED)
+Caps on concurrent guards, destruction events, mobs per server, and VFX per scene, tuned for low-end mobile.
+19.3 Exploit Checklist for Verifier Agents
+Have agents act as an exploiter and attempt each of these against a test build:
+Call every RemoteEvent and RemoteFunction with malformed, out-of-order, oversized and flooded input.
+Fire casts, parries and dashes faster than their data-defined timings allow.
+Delay only the ping replies and measure whether the parry advantage grows.
+Send client-claimed positions, hit results, mana values and timestamps, and check the server ignores them.
+Cast or dash with insufficient mana, during Reel, or while dead.
+Trigger Sacrifice, disconnects and server shutdowns during pending hits, and check that no duplicate or lost state results.
+Race two sessions against one character profile.
+Join the overworld without a menu ticket, or teleport mid-save, and check that characters never duplicate or reset.
+19.4 Moderation
+All in-game text is subject to Roblox moderation. UI names must avoid expletives (hence the Hollow state).
+
+20. Production Plan and Tooling
+20.1 Scope Reality
+The full document is a multi-person, multi-year project. A skilled solo developer using AI tooling can plausibly reach a playable vertical slice in months. The hardest parts are combat feel and netcode, animation and VFX volume, the Aether's content combinatorics, permadeath data safety, and mobile input.
+20.2 Build Order (PROPOSED)
+Combat sandbox: mana, casting, block, parry, dash, delayed resolution, tested against a dummy with a latency harness.
+Data layer and menu: account and character profiles, session locking, the menu place, teleport tickets.
+Overworld slice: a small map with Inns, death and lives, one Anchor town, and PvE training.
+Progression core: one archetype, 4 to 5 spells, one mob type, usage-based XP with saving, and the XP multipliers.
+Aether MVP: one layout (The Convergence), no mutations, a few Horrors built to the Section 4.9 standard.
+The Drift and Bleed Zones: a few regions with premade states and spawn budgets.
+Law: guards and heat.
+Destruction: props and wards first, siege-scale last.
+Everything else, added gradually.
+Defer until the core loop is fun: Parallel Casting, Glyphs, the Sword Mage, most Aether layouts and mutations, full clash math, Scars, and consolidation.
+20.3 Pipeline
+Code: Roblox's built-in Studio MCP server (read structure, edit scripts, insert models, run code, control play mode) plus Rojo and Git. Connected clients can modify open places, so everything lives in version control.
+Verification: skills that enforce smallest-change edits, end-to-end checks, tests that prove behavior, secure-systems review, and safe data migration. Give verifier agents a threat model (Section 19.3). Keep a human sign-off on exploit validation and permadeath data.
+VFX: the most promising area for AI, because VFX in Roblox is mostly data (particles, beams, trails). It needs screenshot feedback to judge look.
+Modeling: good for prototypes and props. Hero assets (Horrors, signature weapons) need a human artist pass.
+Animation: AI drafts, human tunes. Telegraph timing is gameplay, so timings are tuned by hand. Build a small set of base animation pieces and vary speed, feints and combos in code to cut per-Horror animation volume.
+Parallel sessions: fine for independent assets. Settle the spell data model and animation conventions first, and have one session own the core systems.
+Art direction: write a style guide and reference kit first to avoid generic-looking output.
+Pilot test: build one spell end to end (cast animation, projectile VFX, hit effect, parry animation timed against the 0.2s window) and time it honestly before relying on the pipeline.
+20.4 Testing Limits
+TeleportService does not work in Studio playtests, so teleports, friend joins and Aether entry must be tested on a published test experience. Plan agent verification accordingly.
+
+21. Testing and Balance
+Latency matrix: run every parry, dodge and block test at 0, 80, 150, 200 and 300ms, with jitter and packet loss, and confirm identical outcomes for identical inputs up to the cap.
+Timing tests: assert that startup, active and recovery in data match animation markers.
+Determinism: replay recorded input logs against the server and confirm identical results.
+Progression simulation: model time-to-milestone in a spreadsheet for a solo player, a carried player, a farmer, a macro, and a specialist who diversifies. Log milestone funnels from playtests, because one outlier cohort can break the curve.
+Anti-carry test: have strong friends try to carry a new player and see what breaks.
+Aether tuning targets (from v1): about 15% solo survival, about 75% for highly skilled solo players in Alone instances, about 40% for rescue parties. Measure deaths per Horror by skill band. If elite players survive about 95%, raise pressure through hidden scaling (Section 4.9). If skilled players survive about 40%, the fights are overtuned.
+Human playtests: the 0.2s window and telegraph floors can only be judged by people. Test elite players, average players, and mobile and controller players separately.
+
+22. Open Decisions (with Recommended Defaults)
+Drift schedule: shared versus per-server. Recommended: per-server seed, with spawn budgets and per-account diminishing returns.
+Clash formula: Design A or B. Recommended: B, with the 1.25 as a named clash bonus.
+Echelon 3 parry rule. Recommended: parryable with reduced Tempo and a mana cost scaled by echelon gap.
+One-tier echelon gap in clashes. Recommended: the lower spell is destroyed and the higher loses equal energy.
+Combat logging. RESOLVED (Section 4.1): a 30-second stationary, killable body, with exact-state reconnect.
+Sacrifice versus pending hits. Recommended: pending hits resolve first.
+Group-fight Reel rules. Recommended: Reel resistance that grows per recent Reel.
+Horror disengage rules and death recap. Recommended: allow mana-draining disengage, and add a short recap.
+Guard kills cost a Life. Recommended: yes, with clear warnings.
+PvP and crime. Recommended: crimes against players in settled areas raise heat, the wilds do not.
+Fissure failure cost. Recommended: a Life, with clear signposting before entry.
+Consolidation system. Recommended: skip at launch.
+Lineage marks. Recommended: skip at launch.
+Scars. Recommended: post-launch.
+Grimoire arithmetic: 500% base plus 100% Sacrifice bonus gives 600%, not the stated 700%. Recommended: pick a base (600% or keep 500%) and restate Sacrifice as a flat bonus.
+Aether "No Mana Zones." Recommended: no leylines or dead zones, while weather like Mana Storm still applies.
+Slot release. Recommended: stage the nine paid slots.
+Secure beds in the wild. Recommended: consumable camps at PvP risk, post-launch.
+Hidden difficulty scaling in the Aether. Recommended: yes, capped, pressure-only.
+Single cross-platform matchmaking pool. Recommended: yes.
+Rejoin time versus the 30-second window. Recommended: measure real mobile rejoin times, and tune the window or add the fast rejoin path.
+XP and loot for killing a disconnected body. Recommended: none.
+Combat logging in the Aether. Recommended: the same 30-second body rule, with mobs able to kill the body, then the existing Aether persistence applies.
+
+Appendix A: Inconsistencies Found in v1
+Clash formula versus example. [Player Spell Mana x 1.25] - [Enemy Spell Mana] gives 0 for 800 into 1000, but the example said about 200. These are different designs (4.7).
+Rigidity formula. It depended only on total stat points, so it did not make neglected stats pricier as the rationale claimed (5.4).
+Grimoire percentages. A 500% base plus a 100% Sacrifice bonus does not equal the stated 700% total (Section 22, item 15).
+Ping compensation wording. It added latency to the parry window. Replaced by delayed resolution (4.4).
+Solo Instance versus Alone Mutation. The same mechanic was described twice (10% chance). Merged in 10.5.
+Combat logging. A 15-second combat timeout existed, but no rule for disconnecting mid-fight (4.1).
+Mana Vision. Referenced but not defined (15.2).
+Block and parry on one key. Clarified: a tap in the window is a parry, holding past it is a block (4.3).
+Expletive in the UI. The 0 mana state's working name would fail Roblox text moderation. Renamed Hollow (3.2).

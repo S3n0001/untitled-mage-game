@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ponytail"
+  short_description: "Opt-in aggressive minimalism for coding"
+  default_prompt: "Use $ponytail to find and implement the smallest correct solution for this task."

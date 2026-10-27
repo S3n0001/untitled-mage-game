@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diagnose Root Causes"
+  short_description: "Trace failures to evidence-backed root causes"
+  default_prompt: "Use $diagnose-root-causes to reproduce this failure, test alternatives, and establish its causal root."

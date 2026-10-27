@@ -1,0 +1,4 @@
+interface:
+  display_name: "Write Tests That Prove Behavior"
+  short_description: "Write tests for durable observable contracts"
+  default_prompt: "Use $write-tests-that-prove-behavior to add focused tests that distinguish correct behavior from meaningful failures."

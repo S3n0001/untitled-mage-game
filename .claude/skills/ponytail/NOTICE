@@ -1,0 +1,4 @@
+This skill is a skill-only adaptation of DietrichGebert/ponytail v4.9.0
+(commit 2ed6c52c9d7e5e56942508591085fd45dea277d3).
+The upstream plugin hooks and state are intentionally excluded.
+See LICENSE for the license terms carried from upstream.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release Production Changes"
+  short_description: "Release candidates with bounded exposure and recovery"
+  default_prompt: "Use $release-production-changes to roll out this prepared candidate through bounded exposure, health gates, and recovery decisions."

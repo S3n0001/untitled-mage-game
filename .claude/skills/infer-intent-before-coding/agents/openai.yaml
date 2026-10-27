@@ -1,0 +1,4 @@
+interface:
+  display_name: "Infer Intent Before Coding"
+  short_description: "Resolve consequential ambiguity before coding"
+  default_prompt: "Use $infer-intent-before-coding to resolve this request into a bounded, evidence-backed intent contract."
