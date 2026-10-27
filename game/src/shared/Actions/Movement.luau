@@ -3,9 +3,9 @@
 -- offensive action starts before the cancelled recovery would have ended (4.3).
 -- skill_notes are not given for these; drawn from 4.11 (Slip), 4.9 and 3.4 (4.11 Law 6).
 
-local Freeze = require(script.Parent.Freeze)
-local Rules = require(script.Parent.Rules)
-local Types = require(script.Parent.Types)
+local Freeze = require("./Freeze")
+local Rules = require("./Rules")
+local Types = require("./Types")
 
 type MovementDef = Types.MovementDef
 

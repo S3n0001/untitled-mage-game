@@ -10,6 +10,7 @@ The game is several Roblox places (GDD 19.1) sharing one codebase. Each place ha
 ```
 src/shared/                  -> ReplicatedStorage.Shared, in every place
   Clock.luau                 shared time helpers
+  Systems.luau               the system loader every place's init script calls
   Net/                       remote declarations and the client/server wrappers
   Actions/                   action data model (GDD 4.2, 4.13): types, data, registry
 places/<place>/server/       -> ServerScriptService.Server
@@ -56,6 +57,27 @@ Systems reach each other with plain `require`. No service locator.
 - `Clock.now()`: `workspace:GetServerTimeNow()`. Synchronized on server and client. Every timestamp
   that crosses the network or is compared against a window uses this.
 - Never compare tick or frame counts (GDD 4.4). Never trust a client timestamp raw.
+
+## Pure combat logic (`src/shared/Combat/`)
+
+The rules that decide outcomes (timing, mana, states, hit resolution) are pure modules, so they
+are tested with Lune outside Studio and shared by server and client prediction.
+
+- No Roblox globals or services: no `game`, `workspace`, `task`, `os.clock`, `Instance`. Time is
+  always a parameter (`now: number`, seconds, the `Clock.now()` timeline). Geometry uses the
+  Luau `vector` library, which is Roblox's Vector3.
+- Require siblings with relative string paths (`require("./Mana")`). Flat files, no `init.luau`.
+  `Shared/Actions` is reachable as `require("../Actions")`.
+- No hidden state: modules export constructors (`Mana.new(...)`) and functions over plain tables.
+- Numbers marked (tune) in the GDD live in one constants table per module, with the GDD section.
+
+## Tests
+
+- Specs live in `tests/`, mirroring `src/`, named `<Module>.spec.luau`. A spec returns
+  `{ [case name]: () -> () }` and uses `tests/expect.luau`.
+- `scripts/test.sh [filter]` runs them with Lune. Case names state the rule, citing the GDD
+  section: `"parry succeeds when input is exactly 200ms before hit (4.4)"`.
+- Test window edges both sides, and every ordering rule.
 
 ## Networking
 

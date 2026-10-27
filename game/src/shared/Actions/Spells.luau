@@ -2,9 +2,9 @@
 -- Sandbox spells, GDD 4.13 Starter spells. Creature and later spells (e1_tidebolt onward)
 -- are not in the sandbox and are left out.
 
-local Freeze = require(script.Parent.Freeze)
-local Rules = require(script.Parent.Rules)
-local Types = require(script.Parent.Types)
+local Freeze = require("./Freeze")
+local Rules = require("./Rules")
+local Types = require("./Types")
 
 type SpellDef = Types.SpellDef
 

@@ -1,11 +1,11 @@
 --!strict
 -- Action registry (GDD 4.2, 4.13). Every entry is validated and deep-frozen at require time.
 
-local Movement = require(script.Movement)
-local Rules = require(script.Rules)
-local Spells = require(script.Spells)
-local Strikes = require(script.Strikes)
-local Types = require(script.Types)
+local Movement = require("@self/Movement")
+local Rules = require("@self/Rules")
+local Spells = require("@self/Spells")
+local Strikes = require("@self/Strikes")
+local Types = require("@self/Types")
 
 export type ActionDef = Types.ActionDef
 export type SpellDef = Types.SpellDef
@@ -77,9 +77,13 @@ end
 
 local function validateHitbox(def: AttackDef, hitbox: Hitbox, rule: EchelonRule)
 	local id = def.id
-	check(SHAPES_BY_MODE[hitbox.mode][hitbox.shape] == true, id, `{hitbox.shape} is not a {hitbox.mode} hitbox`, "4.13 Hitboxes")
+	local shapes = SHAPES_BY_MODE[hitbox.mode]
+	check(shapes ~= nil, id, `unknown hitbox mode {hitbox.mode}`, "4.13 Hitboxes")
+	check(shapes[hitbox.shape] == true, id, `{hitbox.shape} is not a {hitbox.mode} hitbox`, "4.13 Hitboxes")
 	if hitbox.mode == "Projectile" or hitbox.mode == "Beam" then
 		checkRadius(id, radiusOf(hitbox), rule.projectile_radius_min, rule.projectile_radius_max, "projectile")
+	elseif hitbox.mode == "Area" or hitbox.mode == "Ground" then
+		checkRadius(id, radiusOf(hitbox), rule.area_radius_min, rule.area_radius_max, "area")
 	end
 end
 
@@ -243,6 +247,7 @@ local function validateMovement(def: MovementDef)
 	check((def.mana_cost > 0) ~= (def.strain_cost > 0), id, "pays mana (Dash) or Strain (Step), not both", "4.3, 4.12")
 	check(def.active_ms == m.duration_ms, id, "active_ms must equal the travel duration", "4.3")
 	check(def.cancel == nil, id, "Dash and Step cannot be cancelled", "4.3")
+	check((m.chain_window_ms == nil) == (m.chain_cost_mult == nil), id, "chain window and chain cost come as a pair", "3.4")
 end
 
 local Actions = {}
@@ -307,6 +312,19 @@ end
 
 function Actions.all(): { ActionDef }
 	return list
+end
+
+-- Mana a cast actually costs this caster. E3 also costs at least a share of the caster's max
+-- capacity (4.7), so it depends on the caster and cannot be checked in the data.
+function Actions.manaCost(def: ActionDef, maxCapacity: number): number
+	if def.kind == "Movement" then
+		return def.mana_cost
+	end
+	local frac = Rules.ECHELONS[def.echelon].cost_capacity_frac
+	if frac == nil then
+		return def.mana_cost
+	end
+	return math.max(def.mana_cost, frac * maxCapacity)
 end
 
 return Actions

@@ -2,8 +2,8 @@
 -- Shared combat rules every action reads: echelon bands and floors (4.7), the 4.13 tiers,
 -- and the 4.13 shared rules. All values (tune) unless the GDD locks them.
 
-local Freeze = require(script.Parent.Freeze)
-local Types = require(script.Parent.Types)
+local Freeze = require("./Freeze")
+local Types = require("./Types")
 
 type EchelonRule = Types.EchelonRule
 type HitReaction = Types.HitReaction
