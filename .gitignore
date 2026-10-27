@@ -5,7 +5,7 @@
 .claude/settings.local.json
 
 # Rojo / Luau generated
-game/sourcemap.json
+game/sourcemap*.json
 game/build/
 *.rbxl.lock
 *.rbxlx.lock

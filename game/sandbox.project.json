@@ -1,5 +1,5 @@
 {
-  "name": "untitled-mage-game",
+  "name": "sandbox",
   "tree": {
     "$className": "DataModel",
 
@@ -11,14 +11,14 @@
 
     "ServerScriptService": {
       "Server": {
-        "$path": "src/server"
+        "$path": "places/sandbox/server"
       }
     },
 
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Client": {
-          "$path": "src/client"
+          "$path": "places/sandbox/client"
         }
       }
     }

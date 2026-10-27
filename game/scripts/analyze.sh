@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
-# Type-check and lint all game code with luau-lsp. Run from anywhere.
+# Type-check and lint all game code with luau-lsp, one pass per place. Run from anywhere.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-if [ -z "$(find src -name '*.luau' -o -name '*.lua' | head -1)" ]; then
-	echo "No Luau files in src yet; nothing to analyze."
-	exit 0
-fi
-
-rojo sourcemap default.project.json --output sourcemap.json
-luau-lsp analyze \
-	--platform=roblox \
-	--sourcemap=sourcemap.json \
-	--definitions=@roblox=types/globalTypes.d.luau \
-	src
+status=0
+for project in *.project.json; do
+	place="${project%.project.json}"
+	echo "== $place =="
+	rojo sourcemap "$project" --output "sourcemap.$place.json"
+	luau-lsp analyze \
+		--platform=roblox \
+		--sourcemap="sourcemap.$place.json" \
+		--definitions=@roblox=types/globalTypes.d.luau \
+		src "places/$place" || status=1
+done
+exit $status

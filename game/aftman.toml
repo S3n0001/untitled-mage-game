@@ -2,3 +2,4 @@
 rojo = "rojo-rbx/rojo@7.7.1"
 luau-lsp = "JohnnyMorganz/luau-lsp@1.70.1"
 rbxcloud = "Sleitnick/rbxcloud@0.17.0"
+lune = "lune-org/lune@0.10.4"
